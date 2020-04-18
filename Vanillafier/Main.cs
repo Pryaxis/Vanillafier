@@ -104,6 +104,7 @@ namespace Vanillafier
             Group g = new Group(GroupName);
 
             g.AddPermission("tshock.ignore.*");
+            g.AddPermission("!tshock.ignore.ssc"); //Allow SSC gameplay
 
             g.AddPermission("tshock.npc.hurttown");
             g.AddPermission("tshock.npc.startinvasion");
