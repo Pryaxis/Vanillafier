@@ -1,4 +1,5 @@
-﻿using System.IO;
+﻿using System;
+using System.IO;
 using System.Linq;
 using Terraria;
 using TerrariaApi.Server;
@@ -17,6 +18,8 @@ namespace Vanillafier
         public override string Author => "Pryaxis";
         public override string Description => "Instantly configure your server for vanilla gameplay";
         public override string Name => "Vanillafier";
+
+        public override Version Version => System.Reflection.Assembly.GetExecutingAssembly().GetName().Version;
 
         public Vanillafier(Main game) : base(game) { }
 
@@ -105,6 +108,8 @@ namespace Vanillafier
 
             g.AddPermission("tshock.ignore.*");
             g.AddPermission("!tshock.ignore.ssc"); //Allow SSC gameplay
+
+            g.AddPermission("tshock.account.*"); //Register, login, logout, change password
 
             g.AddPermission("tshock.npc.hurttown");
             g.AddPermission("tshock.npc.startinvasion");
