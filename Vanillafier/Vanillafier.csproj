@@ -49,9 +49,6 @@
     <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="Mono.Data.Sqlite">
-      <HintPath>refs\Mono.Data.Sqlite.dll</HintPath>
-    </Reference>
     <Reference Include="OTAPI, Version=1.3.5.3, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>refs\OTAPI.dll</HintPath>

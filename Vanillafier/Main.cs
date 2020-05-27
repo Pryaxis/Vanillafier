@@ -75,8 +75,8 @@ namespace Vanillafier
             group = gm.GetGroupByName(GroupName);
 
             //Get the TShock user manager, select all non-superadmin groups, and change their group to the new vanilla group
-            UserManager um = TShock.Users;
-            um.GetUsers().Where(u => u.Group != "superadmin").ForEach(u => um.SetUserGroup(u, GroupName));
+            UserAccountManager um = TShock.UserAccounts;
+            um.GetUserAccounts().Where(u => u.Group != "superadmin").ForEach(u => um.SetUserGroup(u, GroupName));
 
             //Update all active player's groups, as long as they're not a superadmin
             foreach (var ply in TShock.Players)
@@ -115,6 +115,7 @@ namespace Vanillafier
             g.AddPermission("tshock.npc.startinvasion");
             g.AddPermission("tshock.npc.startdd2");
             g.AddPermission("tshock.npc.summonboss");
+            g.AddPermission("tshock.npc.spawnpets");
 
             g.AddPermission("tshock.tp.others");
             g.AddPermission("tshock.tp.rod");
@@ -131,6 +132,8 @@ namespace Vanillafier
             g.AddPermission("tshock.partychat");
             g.AddPermission("tshock.thirdperson");
             g.AddPermission("tshock.whisper");
+
+            g.AddPermission("tshock.journey.*");
 
             return g;
         }
