@@ -11,7 +11,8 @@ Vanillafier provides a quick way to disable most of TShock's protection mechanis
 The plugin does not include a way to reverse this process.
 
 ## How to use it:
-* Install the plugin
-* Run the 'vanillafy' command
-* Read the output message and confirm that you do actually want to do this (see attached screenshot)
-* Complete
+1. Install the plugin
+2. Run the 'vanillafy' command
+3. Read the output message and confirm that you do actually want to do this:
+![confirmation](https://i.imgur.com/wFUpgeF.png)
+4. Complete
