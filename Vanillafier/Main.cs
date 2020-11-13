@@ -132,6 +132,7 @@ namespace Vanillafier
             g.AddPermission("tshock.partychat");
             g.AddPermission("tshock.thirdperson");
             g.AddPermission("tshock.whisper");
+            g.AddPermission("tshock.sendemoji");
 
             g.AddPermission("tshock.journey.*");
 
