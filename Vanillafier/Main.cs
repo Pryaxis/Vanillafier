@@ -4,6 +4,7 @@ using System.Linq;
 using Terraria;
 using TerrariaApi.Server;
 using TShockAPI;
+using TShockAPI.Configuration;
 using TShockAPI.DB;
 
 namespace Vanillafier
@@ -46,7 +47,7 @@ namespace Vanillafier
                 player.SendWarningMessage("This command will disable most cheat and grief protection for all non-superadmin users.");
             }
 
-            player.SendWarningMessage($"Are you sure you wish to run this command? Use {TShock.Config.CommandSpecifier}{ConfirmationCommand} to complete configuration.");
+            player.SendWarningMessage($"Are you sure you wish to run this command? Use {TShock.Config.Settings.CommandSpecifier}{ConfirmationCommand} to complete configuration.");
             player.AwaitingResponse.Add(ConfirmationCommand, Confirm);
         }
 
@@ -93,9 +94,9 @@ namespace Vanillafier
             Group.DefaultGroup = group;
 
             //Update the TShock config file so all new guest users will be assigned to the vanilla group
-            ConfigFile tsConfig = TShock.Config;
-            tsConfig.DefaultGuestGroupName = GroupName;
-            tsConfig.DefaultRegistrationGroupName = GroupName;
+            TShockConfig tsConfig = TShock.Config;
+            tsConfig.Settings.DefaultGuestGroupName = GroupName;
+            tsConfig.Settings.DefaultRegistrationGroupName = GroupName;
             //Write the config file so that this change persists
             tsConfig.Write(TShockConfigPath);
 
