@@ -122,6 +122,9 @@ namespace Vanillafier
             g.AddPermission("tshock.tp.rod");
             g.AddPermission("tshock.tp.wormhole");
             g.AddPermission("tshock.tp.pylon");
+            g.AddPermission("tshock.tp.tppotion");
+            g.AddPermission("tshock.tp.magicconch");
+            g.AddPermission("tshock.tp.demonconch");
 
             g.AddPermission("tshock.world.editspawn");
             g.AddPermission("tshock.world.modify");
