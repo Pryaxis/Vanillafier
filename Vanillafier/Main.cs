@@ -77,7 +77,7 @@ namespace Vanillafier
 
             //Get the TShock user manager, select all non-superadmin groups, and change their group to the new vanilla group
             UserAccountManager um = TShock.UserAccounts;
-            um.GetUserAccounts().Where(u => u.Group != "superadmin").ForEach(u => um.SetUserGroup(u, GroupName));
+            um.GetUserAccounts().Where(u => u.Group != "superadmin" && u.Group != "owner").ForEach(u => um.SetUserGroup(u, GroupName));
 
             //Update all active player's groups, as long as they're not a superadmin
             foreach (var ply in TShock.Players)
