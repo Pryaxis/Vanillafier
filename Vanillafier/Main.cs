@@ -118,7 +118,6 @@ namespace Vanillafier
             g.AddPermission("tshock.npc.summonboss");
             g.AddPermission("tshock.npc.spawnpets");
 
-            g.AddPermission("tshock.tp.others");
             g.AddPermission("tshock.tp.rod");
             g.AddPermission("tshock.tp.wormhole");
             g.AddPermission("tshock.tp.pylon");
