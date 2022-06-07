@@ -14,6 +14,8 @@ namespace Vanillafier
     {
         const string ConfirmationCommand = "vanillafy-confirm";
         const string GroupName = "Vanillafied";
+        const string DefualtGuestGroupName = "guest";
+        const string DefaultRegistrationGroupName = "default";
         static string TShockConfigPath { get { return Path.Combine(TShock.SavePath, "config.json"); } }
 
         public override string Author => "Pryaxis";
@@ -26,10 +28,27 @@ namespace Vanillafier
 
         public override void Initialize()
         {
-            Commands.ChatCommands.Add(new Command(Permissions.managegroup, Vanillafy, "vanillafy"));
+            Commands.ChatCommands.Add(new Command(Permissions.managegroup, vanillafy, "vanillafy"));
         }
 
-        public void Vanillafy(CommandArgs args)
+        bool checkState()
+        {
+            bool hasGroup = TShock.Groups.GroupExists(GroupName);
+            bool isDefualt = Group.DefaultGroup.Name == GroupName;
+
+            TShockConfig tsConfig = TShock.Config;
+            bool isDefaultOfConfig = tsConfig.Settings.DefaultGuestGroupName == GroupName && tsConfig.Settings.DefaultRegistrationGroupName == GroupName;
+
+            return hasGroup && isDefualt && isDefaultOfConfig;
+        }
+
+        void printVanillafyState(TSPlayer player)
+        {
+            string stateString = checkState() ? "Open" : "Closed";
+            player.SendInfoMessage($"Vanillafy State: {stateString}");
+        }
+
+        void vanillafy(CommandArgs args)
         {
             var player = args.Player;
             if (player == null)
@@ -37,110 +56,158 @@ namespace Vanillafier
                 return;
             }
 
-            if (TShock.Groups.GroupExists(GroupName))
+            if (args.Parameters.Count <= 0)
             {
-                player.SendErrorMessage("The vanillafy command has already been run.");
-                player.SendWarningMessage("If you proceed with running this command, your existing vanilla configuration will be reset.");
-            }
-            else
-            {
-                player.SendWarningMessage("This command will disable most cheat and grief protection for all non-superadmin users.");
+                printHelp(player);
+                return;
             }
 
-            player.SendWarningMessage($"Are you sure you wish to run this command? Use {TShock.Config.Settings.CommandSpecifier}{ConfirmationCommand} to complete configuration.");
-            player.AwaitingResponse.Add(ConfirmationCommand, Confirm);
+            switch (args.Parameters[0]) {
+                case "on":
+                    if (checkState())
+                    {
+                        player.SendErrorMessage("The vanillafy command has already been run.");
+                        player.SendWarningMessage("If you proceed with running this command, your existing vanilla configuration will be reset.");
+                    }
+                    else
+                    {
+                        player.SendWarningMessage("This command will disable most cheat and grief protection for all non-superadmin users.");
+                    }
+
+                    player.SendWarningMessage($"Are you sure you wish to run this command? Use {TShock.Config.Settings.CommandSpecifier}{ConfirmationCommand} to complete configuration.");
+                    player.AwaitingResponse.Add(ConfirmationCommand, trunOnConfirm);
+                    break;
+                case "off":
+                    if (checkState())
+                    {
+                        player.SendWarningMessage("Vanilla gameplay will be closed soon.");
+                        player.SendWarningMessage($"Are you sure you wish to run this command? Use {TShock.Config.Settings.CommandSpecifier}{ConfirmationCommand} to complete configuration.");
+                        player.AwaitingResponse.Add(ConfirmationCommand, trunOffConfirm);
+                    }
+                    else
+                    {
+                        player.SendErrorMessage("Server is not yet open vanilla gameplay.");
+                    }
+                    break;
+                case "state":
+                    printVanillafyState(player);
+                    break;
+                case "help":
+                default:
+                    printHelp(player);
+                    break;
+            }
         }
 
-        public void Confirm(object obj)
+        void printHelp(TSPlayer player)
+        {
+            player.SendInfoMessage("/vanillafy on - Open Vanillafy");
+            player.SendInfoMessage("/vanillafy off - Close Vanillafy");
+            player.SendInfoMessage("/vanillafy state - Get Vanillafy State");
+            player.SendInfoMessage("/vanillafy help - Get Vanillafy Help");
+        }
+
+        void changeState(Group group, string defaultGuestGroupName=DefualtGuestGroupName)
+        {
+            var GroupName = group.Name;
+
+            UserAccountManager um = TShock.UserAccounts;
+            um.GetUserAccounts().Where(u => u.Group != "superadmin" && u.Group != "owner").ForEach(u => um.SetUserGroup(u, GroupName));
+
+            foreach (var player in TShock.Players)
+            {
+                if (player?.Group == null || player.Group is SuperAdminGroup)
+                {
+                    continue;
+                }
+
+                player.Group = group;
+            }
+
+            Group.DefaultGroup = group;
+
+            TShockConfig tsConfig = TShock.Config;
+            tsConfig.Settings.DefaultGuestGroupName = defaultGuestGroupName;
+            tsConfig.Settings.DefaultRegistrationGroupName = GroupName;
+            tsConfig.Write(TShockConfigPath);
+        }
+
+        void trunOnConfirm(object obj)
         {
             if (obj == null)
             {
                 return;
             }
 
-            CommandArgs args = (CommandArgs)obj;
-            var player = args.Player ?? TSPlayer.Server;
-
-            //Get the TShock group manager and setup the new vanilla group
-            GroupManager gm = TShock.Groups;
-            Group group = CreateVanillaGroupObject();
-            if (!gm.GroupExists(GroupName))
+            GroupManager groupManager = TShock.Groups;
+            Group group = createVanillaGroupObject();
+            if (!groupManager.GroupExists(GroupName))
             {
-                gm.AddGroup(name: GroupName, parentname: null, permissions: group.Permissions, chatcolor: Group.defaultChatColor);
+                groupManager.AddGroup(name: GroupName, parentname: null, permissions: group.Permissions, chatcolor: Group.defaultChatColor);
             }
             else
             {
-                gm.UpdateGroup(name: GroupName, parentname: null, permissions: group.Permissions, chatcolor: Group.defaultChatColor, suffix: null, prefix: null);
+                groupManager.UpdateGroup(name: GroupName, parentname: null, permissions: group.Permissions, chatcolor: Group.defaultChatColor, suffix: null, prefix: null);
             }
-            //Retrieve the group again just so that the object state is synced with db state
-            group = gm.GetGroupByName(GroupName);
+            changeState(groupManager.GetGroupByName(GroupName), GroupName);
 
-            //Get the TShock user manager, select all non-superadmin groups, and change their group to the new vanilla group
-            UserAccountManager um = TShock.UserAccounts;
-            um.GetUserAccounts().Where(u => u.Group != "superadmin" && u.Group != "owner").ForEach(u => um.SetUserGroup(u, GroupName));
-
-            //Update all active player's groups, as long as they're not a superadmin
-            foreach (var ply in TShock.Players)
-            {
-                if (ply?.Group == null || ply.Group is SuperAdminGroup)
-                {
-                    continue;
-                }
-
-                ply.Group = group;
-            }
-
-            //Set the default group for any new guests joining
-            Group.DefaultGroup = group;
-
-            //Update the TShock config file so all new guest users will be assigned to the vanilla group
-            TShockConfig tsConfig = TShock.Config;
-            tsConfig.Settings.DefaultGuestGroupName = GroupName;
-            tsConfig.Settings.DefaultRegistrationGroupName = GroupName;
-            //Write the config file so that this change persists
-            tsConfig.Write(TShockConfigPath);
-
+            CommandArgs args = (CommandArgs)obj;
+            var player = args.Player ?? TSPlayer.Server;
             player.SendSuccessMessage("Server has successfully been configured for vanilla gameplay.");
         }
-        
-        Group CreateVanillaGroupObject()
+
+        void trunOffConfirm(object obj)
         {
-            Group g = new Group(GroupName);
+            if (obj == null)
+            {
+                return;
+            }
 
-            g.AddPermission("tshock.ignore.*");
-            g.AddPermission("!tshock.ignore.ssc"); //Allow SSC gameplay
+            changeState(TShock.Groups.GetGroupByName(DefaultRegistrationGroupName));
 
-            g.AddPermission("tshock.account.*"); //Register, login, logout, change password
+            CommandArgs args = (CommandArgs)obj;
+            var player = args.Player ?? TSPlayer.Server;
+            player.SendSuccessMessage("Server has been unconfigured for vanilla gameplay.");
+        }
+        
+        Group createVanillaGroupObject()
+        {
+            Group group = new Group(GroupName);
 
-            g.AddPermission("tshock.npc.hurttown");
-            g.AddPermission("tshock.npc.startinvasion");
-            g.AddPermission("tshock.npc.startdd2");
-            g.AddPermission("tshock.npc.summonboss");
-            g.AddPermission("tshock.npc.spawnpets");
+            group.AddPermission("tshock.ignore.*");
+            group.AddPermission("!tshock.ignore.ssc");
 
-            g.AddPermission("tshock.tp.rod");
-            g.AddPermission("tshock.tp.wormhole");
-            g.AddPermission("tshock.tp.pylon");
-            g.AddPermission("tshock.tp.tppotion");
-            g.AddPermission("tshock.tp.magicconch");
-            g.AddPermission("tshock.tp.demonconch");
+            group.AddPermission("tshock.account.*");
 
-            g.AddPermission("tshock.world.editspawn");
-            g.AddPermission("tshock.world.modify");
-            g.AddPermission("tshock.world.movenpc");
-            g.AddPermission("tshock.world.paint");
-            g.AddPermission("tshock.world.time.usesundial");
-            g.AddPermission("tshock.world.toggleparty");
+            group.AddPermission("tshock.npc.hurttown");
+            group.AddPermission("tshock.npc.startinvasion");
+            group.AddPermission("tshock.npc.startdd2");
+            group.AddPermission("tshock.npc.summonboss");
+            group.AddPermission("tshock.npc.spawnpets");
+
+            group.AddPermission("tshock.tp.rod");
+            group.AddPermission("tshock.tp.wormhole");
+            group.AddPermission("tshock.tp.pylon");
+            group.AddPermission("tshock.tp.tppotion");
+            group.AddPermission("tshock.tp.magicconch");
+            group.AddPermission("tshock.tp.demonconch");
+
+            group.AddPermission("tshock.world.editspawn");
+            group.AddPermission("tshock.world.modify");
+            group.AddPermission("tshock.world.movenpc");
+            group.AddPermission("tshock.world.paint");
+            group.AddPermission("tshock.world.time.usesundial");
+            group.AddPermission("tshock.world.toggleparty");
             
-            g.AddPermission("tshock.canchat");
-            g.AddPermission("tshock.partychat");
-            g.AddPermission("tshock.thirdperson");
-            g.AddPermission("tshock.whisper");
-            g.AddPermission("tshock.sendemoji");
+            group.AddPermission("tshock.canchat");
+            group.AddPermission("tshock.partychat");
+            group.AddPermission("tshock.thirdperson");
+            group.AddPermission("tshock.whisper");
+            group.AddPermission("tshock.sendemoji");
 
-            g.AddPermission("tshock.journey.*");
+            group.AddPermission("tshock.journey.*");
 
-            return g;
+            return group;
         }
     }
 }
